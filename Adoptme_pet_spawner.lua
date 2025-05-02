@@ -600,3 +600,150 @@ BackButton.Parent = InventoryTitleBar
 local BackButtonCorner = Instance.new("UICorner")
 BackButtonCorner.CornerRadius = UDim.new(0, 10)
 BackButtonCorner.Parent = BackButton
+
+-- Inventory Content Frame
+local InventoryContentFrame = Instance.new("Frame")
+InventoryContentFrame.Name = "InventoryContentFrame"
+InventoryContentFrame.Size = UDim2.new(1, -40, 0.85, -20)
+InventoryContentFrame.Position = UDim2.new(0.5, 0, 0.15, 10)
+InventoryContentFrame.AnchorPoint = Vector2.new(0.5, 0)
+InventoryContentFrame.BackgroundTransparency = 1
+InventoryContentFrame.Parent = InventoryPanel
+
+-- Inventory Label
+local InvInstructionLabel = Instance.new("TextLabel")
+InvInstructionLabel.Name = "InvInstructionLabel"
+InvInstructionLabel.Size = UDim2.new(1, 0, 0, isMobile and 40 or 30)
+InvInstructionLabel.BackgroundTransparency = 1
+InvInstructionLabel.Text = "Your Pets Collection"
+InvInstructionLabel.TextColor3 = colors.accent
+InvInstructionLabel.TextSize = isMobile and 26 or 22
+InvInstructionLabel.Font = Enum.Font.GothamBold
+InvInstructionLabel.Parent = InventoryContentFrame
+
+-- Empty inventory message (initially visible)
+local EmptyInventoryLabel = Instance.new("TextLabel")
+EmptyInventoryLabel.Name = "EmptyInventoryLabel"
+EmptyInventoryLabel.Size = UDim2.new(1, 0, 0, isMobile and 40 or 30)
+EmptyInventoryLabel.Position = UDim2.new(0, 0, 0.4, 0)
+EmptyInventoryLabel.BackgroundTransparency = 1
+EmptyInventoryLabel.Text = "No pets yet. Spawn some pets first! 🐾"
+EmptyInventoryLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+EmptyInventoryLabel.TextSize = isMobile and 24 or 20
+EmptyInventoryLabel.Font = Enum.Font.Gotham
+EmptyInventoryLabel.Parent = InventoryContentFrame
+
+-- Inventory scrolling frame (for pets list)
+local InventoryScrollFrame = Instance.new("ScrollingFrame")
+InventoryScrollFrame.Name = "InventoryScrollFrame"
+InventoryScrollFrame.Size = UDim2.new(1, 0, 0.8, 0)
+InventoryScrollFrame.Position = UDim2.new(0, 0, 0.1, 0)
+InventoryScrollFrame.BackgroundTransparency = 1
+InventoryScrollFrame.BorderSizePixel = 0
+InventoryScrollFrame.ScrollBarThickness = 6
+InventoryScrollFrame.ScrollBarImageColor3 = colors.primary
+InventoryScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
+InventoryScrollFrame.Parent = InventoryContentFrame
+
+-- Inventory Grid Layout
+local InventoryGrid = Instance.new("UIGridLayout")
+InventoryGrid.Name = "InventoryGrid"
+InventoryGrid.CellSize = UDim2.new(0, isMobile and 160 or 120, 0, isMobile and 200 or 160)
+InventoryGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+InventoryGrid.SortOrder = Enum.SortOrder.LayoutOrder
+InventoryGrid.Parent = InventoryScrollFrame
+
+-- Padding for inventory scroll frame
+local InventoryPadding = Instance.new("UIPadding")
+InventoryPadding.PaddingLeft = UDim.new(0, 10)
+InventoryPadding.PaddingRight = UDim.new(0, 10)
+InventoryPadding.PaddingTop = UDim.new(0, 10)
+InventoryPadding.PaddingBottom = UDim.new(0, 10)
+InventoryPadding.Parent = InventoryScrollFrame
+
+-- Pet selection dropdown menu (initially hidden)
+local DropdownMenu = Instance.new("Frame")
+DropdownMenu.Name = "DropdownMenu"
+DropdownMenu.Size = UDim2.new(1, 0, 0, 0) -- Will be resized based on content
+DropdownMenu.Position = UDim2.new(0, 0, 1, 5)
+DropdownMenu.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+DropdownMenu.BorderSizePixel = 0
+DropdownMenu.Visible = false
+DropdownMenu.ZIndex = 10
+DropdownMenu.Parent = PetSelectionFrame
+
+local DropdownMenuCorner = Instance.new("UICorner")
+DropdownMenuCorner.CornerRadius = UDim.new(0, 10)
+DropdownMenuCorner.Parent = DropdownMenu
+
+-- Add shadow to dropdown menu
+local menuShadow = dropdownShadow:Clone()
+menuShadow.Parent = DropdownMenu
+
+-- Create dropdown list layout
+local DropdownList = Instance.new("UIListLayout")
+DropdownList.Name = "DropdownList"
+DropdownList.SortOrder = Enum.SortOrder.LayoutOrder
+DropdownList.Padding = UDim.new(0, 5)
+DropdownList.Parent = DropdownMenu
+
+-- Add padding
+local DropdownPadding = Instance.new("UIPadding")
+DropdownPadding.PaddingLeft = UDim.new(0, 10)
+DropdownPadding.PaddingRight = UDim.new(0, 10)
+DropdownPadding.PaddingTop = UDim.new(0, 5)
+DropdownPadding.PaddingBottom = UDim.new(0, 5)
+DropdownPadding.Parent = DropdownMenu
+
+-- Populate dropdown menu with pet options
+local selectedPet = "Owl"
+local function populateDropdown()
+    for _, child in pairs(DropdownMenu:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    local count = 0
+    for petName, _ in pairs(petData) do
+        count = count + 1
+        local option = Instance.new("TextButton")
+        option.Name = petName .. "Option"
+        option.Size = UDim2.new(1, 0, 0, isMobile and 50 or 40)
+        option.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+        option.BackgroundTransparency = 0.5
+        option.Text = petName
+        option.TextColor3 = colors.text
+        option.TextSize = isMobile and 22 or 18
+        option.Font = Enum.Font.Gotham
+        option.ZIndex = 10
+        option.Parent = DropdownMenu
+        
+        local optionCorner = Instance.new("UICorner")
+        optionCorner.CornerRadius = UDim.new(0, 8)
+        optionCorner.Parent = option
+        
+        option.MouseButton1Click:Connect(function()
+            selectedPet = petName
+            PetDropdown.Text = petName
+            DropdownMenu.Visible = false
+            
+            -- Update preview icon
+            local petInfo = petData[petName]
+            PreviewIcon.Image = petInfo.meshId
+            PreviewIcon.ImageColor3 = petInfo.primaryColor
+        end)
+        
+        -- Hover effects
+        option.MouseEnter:Connect(function()
+            TweenService:Create(option, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(90, 90, 95)}):Play()
+        end)
+        
+        option.MouseLeave:Connect(function()
+            TweenService:Create(option, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 70, 75)}):Play()
+        end)
+    end
+    
+    -- Resize dropdown based on content
+    DropdownMenu.Size = UDim2.new(1, 0, 0, math.min((isMobile and 50 or 40) * count + 10, 300))
+end
