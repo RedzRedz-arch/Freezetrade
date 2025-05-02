@@ -1133,4 +1133,420 @@ local function animatePet(petModel, petInfo)
                 local glowPart = petModel:FindFirstChild("GlowPart" .. i)
                 if glowPart then
                     -- Orbit around pet
-                    local angle = (i - 1) * (math.pi / 2) + gl
+                    local angle = (i - 1) * (math.pi / 2) + glowSize
+                    local offset = Vector3.new(math.cos(angle), math.sin(angle * 0.5), math.sin(angle)) * 1.5
+                    glowPart.Position = petModel.PrimaryPart.Position + offset
+                    
+                    -- Pulse size
+                    local sizePulse = (math.sin(glowSize * 2) * 0.2) + 0.8
+                    glowPart.Size = Vector3.new(0.5, 0.5, 0.5) * sizePulse
+                end
+            end
+        end
+    end)
+    
+    return animationConnection
+end
+
+-- Function to create pet riding attachment
+local function createPetRidingAttachment(petModel)
+    -- Create attachment in player character
+    local attachment = Instance.new("Attachment")
+    attachment.Name = "PetAttachment"
+    attachment.Position = Vector3.new(0, 0, 0)
+    attachment.Parent = LocalPlayer.Character.HumanoidRootPart
+    
+    -- Move pet to attachment position
+    petModel.PrimaryPart.Anchored = false
+    
+    -- Create constraint
+    local constraint = Instance.new("RigidConstraint")
+    constraint.Name = "PetConstraint"
+    constraint.Attachment0 = attachment
+    constraint.Attachment1 = Instance.new("Attachment", petModel.PrimaryPart)
+    constraint.Parent = attachment
+    
+    -- Position pet properly
+    petModel:SetPrimaryPartCFrame(LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0))
+    
+    return attachment
+end
+
+-- Function to handle pet equipping and following
+local function equipPet(petModel, petInfo)
+    -- If there's already an active pet, remove it first
+    if activePet then
+        -- Remove riding attachment if exists
+        if LocalPlayer.Character:FindFirstChild("PetAttachment") then
+            LocalPlayer.Character.PetAttachment:Destroy()
+        end
+        
+        -- Stop following current pet
+        activePet = nil
+    end
+    
+    -- Set new active pet
+    activePet = petModel
+    
+    -- Make pet follow player (initially not riding)
+    local isRiding = false
+    
+    -- Create a notification
+    local notification = Instance.new("TextLabel")
+    notification.Name = "PetNotification"
+    notification.Size = UDim2.new(0, 250, 0, 50)
+    notification.Position = UDim2.new(0.5, 0, 0.8, 0)
+    notification.AnchorPoint = Vector2.new(0.5, 0.5)
+    notification.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    notification.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notification.TextSize = 16
+    notification.Font = Enum.Font.GothamBold
+    notification.Text = "Press 'R' to ride your pet!"
+    notification.Parent = ScreenGui
+    
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.CornerRadius = UDim.new(0, 10)
+    notifCorner.Parent = notification
+    
+    -- Add notification border
+    local notifBorder = Instance.new("UIStroke")
+    notifBorder.Color = colors.accent
+    notifBorder.Thickness = 2
+    notifBorder.Parent = notification
+
+    -- Add notification border
+    local notifBorder = Instance.new("UIStroke")
+    notifBorder.Color = colors.accent
+    notifBorder.Thickness = 2
+    notifBorder.Parent = notification
+    
+    -- Fade out notification
+    TweenService:Create(notification, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 3), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+    game:GetService("Debris"):AddItem(notification, 4)
+    
+    -- Listen for R key to toggle riding
+    local connection
+    connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.R then
+            if not isRiding then
+                -- Create attachment for riding
+                createPetRidingAttachment(petModel)
+                isRiding = true
+                
+                -- Notification for dismounting
+                local dismountNotif = notification:Clone()
+                dismountNotif.Text = "Press 'R' again to dismount!"
+                dismountNotif.Parent = ScreenGui
+                
+                TweenService:Create(dismountNotif, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 3), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+                game:GetService("Debris"):AddItem(dismountNotif, 4)
+            else
+                -- Remove attachment to stop riding
+                if LocalPlayer.Character:FindFirstChild("PetAttachment") then
+                    LocalPlayer.Character.PetAttachment:Destroy()
+                end
+                
+                -- Re-anchor pet
+                petModel.PrimaryPart.Anchored = true
+                isRiding = false
+                
+                -- Notification for mounting
+                local mountNotif = notification:Clone()
+                mountNotif.Text = "Press 'R' to ride your pet!"
+                mountNotif.Parent = ScreenGui
+                
+                TweenService:Create(mountNotif, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 3), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+                game:GetService("Debris"):AddItem(mountNotif, 4)
+            end
+        end
+    end)
+    
+    return connection
+end
+
+-- Function to update inventory display
+local function updateInventoryDisplay()
+    -- Clear existing pet templates
+    for _, child in pairs(InventoryScrollFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+    
+    -- Hide empty message if we have pets
+    EmptyInventoryLabel.Visible = #spawnedPets == 0
+    
+    -- Add pets to inventory
+    for i, pet in ipairs(spawnedPets) do
+        local template = createPetTemplate(pet.name, pet.rarity)
+        template.LayoutOrder = i
+        template.Parent = InventoryScrollFrame
+        
+        -- Add equip functionality
+        template.EquipButton.MouseButton1Click:Connect(function()
+            -- Check if the model still exists
+            local petModel = petModels[i]
+            if petModel and petModel.Parent then
+                equipPet(petModel, pet)
+                -- Add notification border
+    local notifBorder = Instance.new("UIStroke")
+    notifBorder.Color = colors.accent
+    notifBorder.Thickness = 2
+    notifBorder.Parent = notification
+    
+    -- Fade out notification
+    TweenService:Create(notification, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 3), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+    game:GetService("Debris"):AddItem(notification, 4)
+    
+    -- Listen for R key to toggle riding
+    local connection
+    connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.R then
+            if not isRiding then
+                -- Create attachment for riding
+                createPetRidingAttachment(petModel)
+                isRiding = true
+                
+                -- Notification for dismounting
+                local dismountNotif = notification:Clone()
+                dismountNotif.Text = "Press 'R' again to dismount!"
+                dismountNotif.Parent = ScreenGui
+                
+                TweenService:Create(dismountNotif, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 3), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+                game:GetService("Debris"):AddItem(dismountNotif, 4)
+            else
+                -- Remove attachment to stop riding
+                if LocalPlayer.Character:FindFirstChild("PetAttachment") then
+                    LocalPlayer.Character.PetAttachment:Destroy()
+                end
+                
+                -- Re-anchor pet
+                petModel.PrimaryPart.Anchored = true
+                isRiding = false
+                
+                -- Notification for mounting
+                local mountNotif = notification:Clone()
+                mountNotif.Text = "Press 'R' to ride your pet!"
+                mountNotif.Parent = ScreenGui
+                
+                TweenService:Create(mountNotif, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 3), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+                game:GetService("Debris"):AddItem(mountNotif, 4)
+            end
+        end
+    end)
+    
+    return connection
+end
+
+-- Function to update inventory display
+local function updateInventoryDisplay()
+    -- Clear existing pet templates
+    for _, child in pairs(InventoryScrollFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+    
+    -- Hide empty message if we have pets
+    EmptyInventoryLabel.Visible = #spawnedPets == 0
+    
+    -- Add pets to inventory
+    for i, pet in ipairs(spawnedPets) do
+        local template = createPetTemplate(pet.name, pet.rarity)
+        template.LayoutOrder = i
+        template.Parent = InventoryScrollFrame
+        
+        -- Add equip functionality
+        template.EquipButton.MouseButton1Click:Connect(function()
+            -- Check if the model still exists
+            local petModel = petModels[i]
+            if petModel and petModel.Parent then
+                equipPet(petModel, pet)
+                                    
+                -- Show confirmation
+    local notification = Instance.new("TextLabel")
+    notification.Name = "SpawnNotification"
+    notification.Size = UDim2.new(0, 300, 0, 60)
+    notification.Position = UDim2.new(0.5, 0, 0.7, 0)
+    notification.AnchorPoint = Vector2.new(0.5, 0.5)
+    notification.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    notification.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notification.TextSize = isMobile and 20 or 16
+    notification.Font = Enum.Font.GothamBold
+    notification.Text = "Successfully spawned a " .. petRarity .. " " .. petName .. "!"
+    notification.Parent = ScreenGui
+    
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.CornerRadius = UDim.new(0, 10)
+    notifCorner.Parent = notification
+    
+    -- Add glowing border based on rarity
+    local notifBorder = Instance.new("UIStroke")
+    if petRarity == "FR" then
+        notifBorder.Color = Color3.fromRGB(255, 255, 255)
+    elseif petRarity == "NFR" then
+        notifBorder.Color = Color3.fromRGB(115, 230, 95)
+    else -- MFR
+        notifBorder.Color = Color3.fromRGB(255, 217, 61)
+    end
+    notifBorder.Thickness = 2
+    notifBorder.Parent = notification
+    
+    -- Fade out notification
+    TweenService:Create(notification, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 2), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+    game:GetService("Debris"):AddItem(notification, 3)
+end)
+
+-- Initialize UI with default pet
+PetDropdown.Text = selectedPet
+local defaultPetInfo = petData[selectedPet]
+PreviewIcon.Image = defaultPetInfo.meshId
+PreviewIcon.ImageColor3 = defaultPetInfo.primaryColor
+
+-- Clean up when script is destroyed
+script.Destroying:Connect(function()
+    -- Destroy all pet models
+    for _, model in pairs(petModels) do
+        if model and model.Parent then
+            model:Destroy()
+        end
+    end
+    
+    -- Remove any attachments
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("PetAttachment") then
+        LocalPlayer.Character.PetAttachment:Destroy()
+    end
+end)
+
+-- Initialize help button tooltip
+local helpTooltip = Instance.new("Frame")
+helpTooltip.Name = "HelpTooltip"
+helpTooltip.Size = UDim2.new(0, 250, 0, isMobile and 200 or 150)
+helpTooltip.Position = UDim2.new(1, 10, 0, 0)
+helpTooltip.AnchorPoint = Vector2.new(0, 0)
+helpTooltip.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+helpTooltip.BorderSizePixel = 0
+helpTooltip.Visible = false
+helpTooltip.ZIndex = 10
+helpTooltip.Parent = HelpButton
+
+local tooltipCorner = Instance.new("UICorner")
+tooltipCorner.CornerRadius = UDim.new(0, 8)
+tooltipCorner.Parent = helpTooltip
+
+local tooltipTitle = Instance.new("TextLabel")
+tooltipTitle.Name = "Title"
+tooltipTitle.Size = UDim2.new(1, 0, 0, 30)
+tooltipTitle.BackgroundTransparency = 1
+tooltipTitle.Text = "📋 Help & Tips"
+tooltipTitle.TextColor3 = colors.accent
+tooltipTitle.TextSize = isMobile and 20 or 16
+tooltipTitle.Font = Enum.Font.GothamBold
+tooltipTitle.Parent = helpTooltip
+
+local tooltipContent = Instance.new("TextLabel")
+tooltipContent.Name = "Content"
+tooltipContent.Size = UDim2.new(1, -20, 1, -40)
+tooltipContent.Position = UDim2.new(0, 10, 0, 30)
+tooltipContent.BackgroundTransparency = 1
+tooltipContent.Text = "• Select a pet and rarity from the dropdowns\n• Click 'SPAWN' to create your pet\n• Press 'R' to ride your equipped pet\n• Use the Inventory to view your pets"
+tooltipContent.TextColor3 = colors.text
+tooltipContent.TextSize = isMobile and 18 or 14
+tooltipContent.Font = Enum.Font.Gotham
+tooltipContent.TextXAlignment = Enum.TextXAlignment.Left
+tooltipContent.TextYAlignment = Enum.TextYAlignment.Top
+tooltipContent.TextWrapped = true
+tooltipContent.Parent = helpTooltip
+
+-- Toggle tooltip visibility
+local tooltipVisible = false
+HelpButton.MouseButton1Click:Connect(function()
+    tooltipVisible = not tooltipVisible
+    helpTooltip.Visible = tooltipVisible
+end)
+
+-- Close tooltip when clicking elsewhere
+BackgroundFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if tooltipVisible then
+            tooltipVisible = false
+            helpTooltip.Visible = false
+        end
+    end
+end)
+
+-- Save pets data when player leaves
+game.Players.PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer then
+        -- In a real game, you would save pets data to DataStore here
+        for _, model in pairs(petModels) do
+            if model and model.Parent then
+                model:Destroy()
+            end
+        end
+    end
+end)
+
+-- Final setup for mobile compatibility
+if isMobile then
+    -- Adjust UI for mobile
+    TitleBar.Size = UDim2.new(1, 0, 0, 60)
+    CloseButton.Size = UDim2.new(0, 50, 0, 50)
+    HelpButton.Size = UDim2.new(0, 50, 0, 50)
+    
+    -- Make controls more touch-friendly
+    PetDropdown.Size = UDim2.new(1, 0, 0, 60)
+    RarityDropdown.Size = UDim2.new(1, 0, 0, 60)
+    
+    -- Adjust label sizes
+    for _, label in pairs(ContentFrame:GetDescendants()) do
+        if label:IsA("TextLabel") then
+            label.TextSize = label.TextSize * 1.25
+        end
+    end
+end
+
+-- Add a gentle pulsing animation to the spawn button for emphasis
+local function pulseButton(button)
+    while button and button.Parent do
+        TweenService:Create(button, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, button.Size.Y.Scale, button.Size.Y.Offset + 5)}):Play()
+        wait(1)
+        TweenService:Create(button, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, button.Size.Y.Scale, button.Size.Y.Offset - 5)}):Play()
+        wait(1)
+    end
+end
+
+-- Start pulsing animation for the spawn button
+coroutine.wrap(function()
+    pulseButton(SpawnButton)
+end)()
+
+-- Add subtle shadow to all major UI elements for better depth
+local function addShadowTo(element)
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.BackgroundTransparency = 1
+    shadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+    shadow.Size = UDim2.new(1, 10, 1, 10)
+    shadow.ZIndex = element.ZIndex - 1
+    shadow.Image = "rbxassetid://5554236805"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.6
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(23, 23, 277, 277)
+    shadow.Parent = element
+end
+
+-- Add shadows to main elements
+addShadowTo(MainPanel)
+addShadowTo(InventoryPanel)
+addShadowTo(PetSelectionFrame)
+addShadowTo(SpawnButton)
+addShadowTo(InventoryButton)
+
+-- Initialize everything!
+updateInventoryDisplay()
+
+print("Pet Spawner UI initialized successfully!")
+                            
