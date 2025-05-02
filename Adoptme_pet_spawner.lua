@@ -747,3 +747,125 @@ local function populateDropdown()
     -- Resize dropdown based on content
     DropdownMenu.Size = UDim2.new(1, 0, 0, math.min((isMobile and 50 or 40) * count + 10, 300))
 end
+
+-- Toggle dropdown visibility
+PetDropdown.MouseButton1Click:Connect(function()
+    if not DropdownMenu.Visible then
+        populateDropdown()
+        DropdownMenu.Visible = true
+    else
+        DropdownMenu.Visible = false
+    end
+end)
+
+-- Close dropdown when clicking elsewhere
+BackgroundFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        DropdownMenu.Visible = false
+    end
+end)
+
+-- Toggle inventory panel
+InventoryButton.MouseButton1Click:Connect(function()
+    MainPanel:FindFirstChild("ContentFrame").Visible = false
+    InventoryPanel.Visible = true
+end)
+
+BackButton.MouseButton1Click:Connect(function()
+    InventoryPanel.Visible = false
+    MainPanel:FindFirstChild("ContentFrame").Visible = true
+end)
+
+-- Close the entire UI
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Button hover effects for main controls
+local function applyButtonHoverEffects(button, originalColor, hoverColor)
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = originalColor}):Play()
+    end)
+end
+
+applyButtonHoverEffects(SpawnButton, colors.accent, Color3.fromRGB(colors.accent.R*1.1, colors.accent.G*1.1, colors.accent.B*1.1))
+applyButtonHoverEffects(InventoryButton, colors.secondary, Color3.fromRGB(colors.secondary.R*1.1, colors.secondary.G*1.1, colors.secondary.B*1.1))
+applyButtonHoverEffects(BackButton, Color3.fromRGB(60, 60, 65), Color3.fromRGB(75, 75, 80))
+
+-- Button click effect
+local function applyClickEffect(button)
+    button.MouseButton1Down:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, button.Size.Y.Scale, button.Size.Y.Offset - 5)}):Play()
+    end)
+    
+    button.MouseButton1Up:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, button.Size.Y.Scale, button.Size.Y.Offset + 5)}):Play()
+    end)
+end
+
+applyClickEffect(SpawnButton)
+applyClickEffect(InventoryButton)
+
+-- Function to create pet template for inventory
+local function createPetTemplate(petName, petRarity)
+    local template = Instance.new("Frame")
+    template.Name = petName .. "_Template"
+    template.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    template.BorderSizePixel = 0
+    
+    local templateCorner = Instance.new("UICorner")
+    templateCorner.CornerRadius = UDim.new(0, 10)
+    templateCorner.Parent = template
+    
+    -- Add glow based on rarity
+    local rarityColor
+    if petRarity == "FR" then
+        rarityColor = Color3.fromRGB(255, 255, 255)
+    elseif petRarity == "NFR" then
+        rarityColor = Color3.fromRGB(115, 230, 95)
+    else -- MFR
+        rarityColor = Color3.fromRGB(255, 217, 61)
+    end
+    
+    local templateGlow = Instance.new("ImageLabel")
+    templateGlow.Name = "Glow"
+    templateGlow.Size = UDim2.new(1.1, 0, 1.1, 0)
+    templateGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    templateGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+    templateGlow.BackgroundTransparency = 1
+    templateGlow.Image = "rbxassetid://5028857084"
+    templateGlow.ImageColor3 = rarityColor
+    templateGlow.ImageTransparency = 0.7
+    templateGlow.ZIndex = -1
+    templateGlow.Parent = template
+    
+    local petInfo = petData[petName]
+    
+    -- Pet icon
+    local petIcon = Instance.new("ImageLabel")
+    petIcon.Name = "PetIcon"
+    petIcon.Size = UDim2.new(0.8, 0, 0.5, 0)
+    petIcon.Position = UDim2.new(0.5, 0, 0.3, 0)
+    petIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    petIcon.BackgroundTransparency = 1
+    petIcon.Image = petInfo.meshId
+    petIcon.ImageColor3 = petInfo.primaryColor
+    petIcon.Parent = template
+    
+    -- Pet name
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "NameLabel"
+    nameLabel.Size = UDim2.new(1, 0, 0, isMobile and 28 or 24)
+    nameLabel.Position = UDim2.new(0, 0, 0.6, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = petName
+    nameLabel.TextColor3 = colors.text
+    nameLabel.TextSize = isMobile and 20 or 16
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Parent = template
+    
+    
