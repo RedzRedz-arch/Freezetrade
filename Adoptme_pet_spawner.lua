@@ -867,5 +867,270 @@ local function createPetTemplate(petName, petRarity)
     nameLabel.TextSize = isMobile and 20 or 16
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.Parent = template
+
+    -- Rarity badge
+    local rarityBadge = Instance.new("Frame")
+    rarityBadge.Name = "RarityBadge"
+    rarityBadge.Size = UDim2.new(0.8, 0, 0, isMobile and 30 or 24)
+    rarityBadge.Position = UDim2.new(0.5, 0, 0.75, 0)
+    rarityBadge.AnchorPoint = Vector2.new(0.5, 0)
+    rarityBadge.BackgroundColor3 = rarityColor
+    rarityBadge.Parent = template
     
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0.5, 0)
+    badgeCorner.Parent = rarityBadge
     
+    local rarityLabel = Instance.new("TextLabel")
+    rarityLabel.Name = "RarityLabel"
+    rarityLabel.Size = UDim2.new(1, 0, 1, 0)
+    rarityLabel.BackgroundTransparency = 1
+    rarityLabel.Text = petRarity
+    rarityLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
+    rarityLabel.TextSize = isMobile and 18 or 14
+    rarityLabel.Font = Enum.Font.GothamBold
+    rarityLabel.Parent = rarityBadge
+    
+    -- Equip button
+    local equipButton = Instance.new("TextButton")
+    equipButton.Name = "EquipButton"
+    equipButton.Size = UDim2.new(0.8, 0, 0, isMobile and 30 or 24)
+    equipButton.Position = UDim2.new(0.5, 0, 0.9, 0)
+    equipButton.AnchorPoint = Vector2.new(0.5, 0)
+    equipButton.BackgroundColor3 = colors.primary
+    equipButton.Text = "EQUIP"
+    equipButton.TextColor3 = colors.text
+    equipButton.TextSize = isMobile and 18 or 14
+    equipButton.Font = Enum.Font.GothamBold
+    equipButton.Parent = template
+    
+    local equipCorner = Instance.new("UICorner")
+    equipCorner.CornerRadius = UDim.new(0.5, 0)
+    equipCorner.Parent = equipButton
+    
+    -- Hover effect for equip button
+    applyButtonHoverEffects(equipButton, colors.primary, Color3.fromRGB(colors.primary.R*1.1, colors.primary.G*1.1, colors.primary.B*1.1))
+    
+    return template
+end
+
+-- Spawned pets collection
+local spawnedPets = {}
+local activePet = nil
+local petModels = {}
+
+-- Create pet model function
+local function createPetModel(petName, rarity)
+    -- Create pet information
+    local pet = {}
+    pet.name = petName
+    pet.rarity = rarity
+    pet.info = petData[petName]
+    
+    -- Create the pet model
+    local model = Instance.new("Model")
+    model.Name = petName .. "_" .. rarity
+    
+    -- Create the primary part (body)
+    local body = Instance.new("Part")
+    body.Name = "Body"
+    body.Size = Vector3.new(2, 2, 2)
+    body.Position = LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0)
+    body.Transparency = 1 -- Make the body invisible
+    body.CanCollide = false
+    body.Anchored = true
+    body.Parent = model
+    
+    -- Set as primary part
+    model.PrimaryPart = body
+    
+    -- Create the mesh
+    local mesh = Instance.new("SpecialMesh")
+    mesh.MeshType = Enum.MeshType.FileMesh
+    mesh.MeshId = pet.info.meshId
+    mesh.Scale = pet.info.scale
+    mesh.Parent = body
+    
+    -- Create the main pet body visual
+    local visual = Instance.new("Part")
+    visual.Name = "Visual"
+    visual.Size = Vector3.new(1, 1, 1)
+    visual.Transparency = 0
+    visual.CanCollide = false
+    visual.Anchored = false
+    visual.Position = body.Position
+    visual.Parent = model
+
+    -- Weld visual to body
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = body
+    weld.Part1 = visual
+    weld.Parent = body
+    
+    -- Create the mesh for visual
+    local visualMesh = Instance.new("SpecialMesh")
+    visualMesh.MeshType = Enum.MeshType.FileMesh
+    visualMesh.MeshId = pet.info.meshId
+    visualMesh.Scale = pet.info.scale
+    visualMesh.Parent = visual
+    
+    -- Material and color
+    visual.Material = Enum.Material.SmoothPlastic
+    visual.Color = pet.info.primaryColor
+    
+    -- Add Neon parts for NFR and MFR
+    if rarity == "NFR" or rarity == "MFR" then
+        local glowColor = (rarity == "NFR") and Color3.fromRGB(115, 230, 95) or Color3.fromRGB(255, 217, 61)
+        
+        -- Create glow parts
+        for i = 1, 4 do
+            local glowPart = Instance.new("Part")
+            glowPart.Name = "GlowPart" .. i
+            glowPart.Size = Vector3.new(0.5, 0.5, 0.5)
+            glowPart.Transparency = 0.5
+            glowPart.CanCollide = false
+            glowPart.Anchored = false
+            glowPart.Material = Enum.Material.Neon
+            glowPart.Color = glowColor
+            glowPart.Shape = Enum.PartType.Ball
+            glowPart.Parent = model
+            
+            -- Position in a circle around the pet
+            local angle = (i - 1) * (math.pi / 2)
+            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * 2
+            glowPart.Position = body.Position + offset
+            
+            -- Weld to body
+            local glowWeld = Instance.new("WeldConstraint")
+            glowWeld.Part0 = body
+            glowWeld.Part1 = glowPart
+            glowWeld.Parent = body
+        end
+    end
+    
+    -- Add fly parts if FR or NFR or MFR
+    if rarity == "FR" or rarity == "NFR" or rarity == "MFR" then
+        -- Left wing
+        local leftWing = Instance.new("Part")
+        leftWing.Name = "LeftWing"
+        leftWing.Size = Vector3.new(0.1, 2, 1)
+        leftWing.Transparency = 0.3
+        leftWing.CanCollide = false
+        leftWing.Anchored = false
+        leftWing.Material = Enum.Material.Neon
+        leftWing.Color = pet.info.secondaryColor
+        leftWing.Position = body.Position + Vector3.new(-1, 0, 0)
+        leftWing.Parent = model
+        
+        -- Weld left wing
+        local leftWingWeld = Instance.new("WeldConstraint")
+        leftWingWeld.Part0 = body
+        leftWingWeld.Part1 = leftWing
+        leftWingWeld.Parent = body
+        
+        -- Right wing
+        local rightWing = Instance.new("Part")
+        rightWing.Name = "RightWing"
+        rightWing.Size = Vector3.new(0.1, 2, 1)
+        rightWing.Transparency = 0.3
+        rightWing.CanCollide = false
+        rightWing.Anchored = false
+        rightWing.Material = Enum.Material.Neon
+        rightWing.Color = pet.info.secondaryColor
+        rightWing.Position = body.Position + Vector3.new(1, 0, 0)
+        rightWing.Parent = model
+        
+        -- Weld right wing
+        local rightWingWeld = Instance.new("WeldConstraint")
+        rightWingWeld.Part0 = body
+        rightWingWeld.Part1 = rightWing
+        rightWingWeld.Parent = body
+    end
+    
+    model.Parent = workspace
+    
+    -- Store reference to the model
+    table.insert(petModels, model)
+    
+    -- Return the created model and pet info
+    return model, pet
+end
+
+-- Function to animate pet
+local function animatePet(petModel, petInfo)
+    -- Floating animation for idle
+    local floatHeight = 0
+    local floatSpeed = petInfo.info.animationSpeed
+    
+    -- Wing flap animation
+    local flapAngle = 0
+    local flapSpeed = 3 * petInfo.info.animationSpeed
+    
+    -- Glow animation for NFR/MFR
+    local glowSize = 1
+    local glowSpeed = 1
+    
+    local animationConnection = RunService.Heartbeat:Connect(function(dt)
+        -- Check if model still exists
+        if not petModel or not petModel.PrimaryPart then
+            if animationConnection then
+                animationConnection:Disconnect()
+            end
+            return
+        end
+        
+        -- Floating animation
+        floatHeight = floatHeight + dt * floatSpeed
+        local yOffset = math.sin(floatHeight) * 0.5
+        
+        -- If pet is following (not riding)
+        if activePet == petModel and not LocalPlayer.Character:FindFirstChild("PetAttachment") then
+            -- Get target position behind player
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local hrp = character.HumanoidRootPart
+                local behind = hrp.CFrame * CFrame.new(0, 0, 3)
+                
+                -- Smoothly move towards target
+                local currentPos = petModel.PrimaryPart.Position
+                local targetPos = behind.Position + Vector3.new(0, 1 + yOffset, 0)
+                local newPos = currentPos:Lerp(targetPos, 0.1)
+                
+                -- Look at player
+                local lookAt = CFrame.lookAt(newPos, hrp.Position)
+                
+                -- Update position
+                petModel:SetPrimaryPartCFrame(CFrame.new(newPos) * CFrame.Angles(0, lookAt.Y, 0))
+            end
+        elseif not LocalPlayer.Character:FindFirstChild("PetAttachment") then
+            -- Just float in place if not active
+            local currentPos = petModel.PrimaryPart.Position
+            petModel:SetPrimaryPartCFrame(CFrame.new(currentPos.X, currentPos.Y + yOffset, currentPos.Z))
+        end
+        
+        -- Wing flap animation if pet has wings
+        local leftWing = petModel:FindFirstChild("LeftWing")
+        local rightWing = petModel:FindFirstChild("RightWing")
+        
+        if leftWing and rightWing then
+            flapAngle = flapAngle + dt * flapSpeed
+            
+            local wingAngle = math.sin(flapAngle) * 0.5
+            
+            -- Update wing rotation
+            local leftWingCF = petModel.PrimaryPart.CFrame * CFrame.Angles(0, 0, wingAngle) * CFrame.new(-1.5, 0, 0)
+            local rightWingCF = petModel.PrimaryPart.CFrame * CFrame.Angles(0, 0, -wingAngle) * CFrame.new(1.5, 0, 0)
+            
+            leftWing.CFrame = leftWingCF
+            rightWing.CFrame = rightWingCF
+        end
+        
+        -- Glow animation for NFR/MFR pets
+        if petInfo.rarity == "NFR" or petInfo.rarity == "MFR" then
+            glowSize = glowSize + dt * glowSpeed
+            
+            for i = 1, 4 do
+                local glowPart = petModel:FindFirstChild("GlowPart" .. i)
+                if glowPart then
+                    -- Orbit around pet
+                    local angle = (i - 1) * (math.pi / 2) + gl
