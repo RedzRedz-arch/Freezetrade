@@ -3,10 +3,14 @@
     Compatible with Delta Executor and other Roblox executors
     
     Instructions:
-    1. Copy this entire script
-    2. Open Delta or your preferred executor
-    3. Paste the script and execute while in Adopt Me
-    4. Use the GUI to freeze trade with any player
+    1. In your executor, run this loadstring:
+       loadstring(game:HttpGet("https://raw.githubusercontent.com/AdoptMeScripts/FreezeTradeV2/main/script.lua"))()
+       
+       OR
+       
+    2. Copy this entire script and execute it directly in your executor
+    
+    3. Use the GUI to freeze trade with any player
 ]]
 
 -- Local variables for script functionality
@@ -453,4 +457,4 @@ frame:TweenPosition(UDim2.new(0.5, -125, 0, 20), "Out", "Bounce", 1)
 wait(3)
 frame:TweenPosition(UDim2.new(0.5, -125, 0, -70), "Out", "Quad", 0.5)
 wait(0.5)
-notif:Destroy()
+notif:Destroy() 
