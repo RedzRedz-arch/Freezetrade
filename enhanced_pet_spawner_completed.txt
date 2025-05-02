@@ -1,0 +1,609 @@
+-- Continuing from where the code left off
+
+InventoryButton.Name = "InventoryButton"
+InventoryButton.Size = UDim2.new(0.35, 0, 0, isMobile and 60 or 40)
+InventoryButton.Position = UDim2.new(0.825, 0, 0, isMobile and 100 or 80)
+InventoryButton.AnchorPoint = Vector2.new(0.5, 0)
+InventoryButton.BackgroundColor3 = colors.secondary
+InventoryButton.Text = "🎒 INVENTORY"
+InventoryButton.TextColor3 = colors.text
+InventoryButton.TextSize = isMobile and 20 or 16
+InventoryButton.Font = Enum.Font.GothamBold
+InventoryButton.Parent = ContentFrame
+
+local InventoryButtonCorner = Instance.new("UICorner")
+InventoryButtonCorner.CornerRadius = UDim.new(0, 10)
+InventoryButtonCorner.Parent = InventoryButton
+
+-- Inventory button gradient
+local InventoryGradient = Instance.new("UIGradient")
+InventoryGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, colors.secondary),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(colors.secondary.R*0.8, colors.secondary.G*0.8, colors.secondary.B*0.8))
+})
+InventoryGradient.Rotation = 90
+InventoryGradient.Parent = InventoryButton
+
+-- Button glow for inventory
+local inventoryGlow = Instance.new("ImageLabel")
+inventoryGlow.Name = "Glow"
+inventoryGlow.Size = UDim2.new(1.1, 0, 1.2, 0)
+inventoryGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+inventoryGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+inventoryGlow.BackgroundTransparency = 1
+inventoryGlow.Image = "rbxassetid://5028857084"
+inventoryGlow.ImageColor3 = colors.secondary
+inventoryGlow.ImageTransparency = 0.7
+inventoryGlow.ZIndex = -1
+inventoryGlow.Parent = InventoryButton
+
+-- Inventory Panel (initially hidden)
+local InventoryPanel = Instance.new("Frame")
+InventoryPanel.Name = "InventoryPanel"
+InventoryPanel.Size = UDim2.new(1, 0, 1, 0)
+InventoryPanel.BackgroundColor3 = colors.background
+InventoryPanel.BorderSizePixel = 0
+InventoryPanel.Visible = false
+InventoryPanel.Parent = MainPanel
+
+local InventoryPanelCorner = UICorner:Clone()
+InventoryPanelCorner.Parent = InventoryPanel
+
+local InventoryGradient = UIGradient:Clone()
+InventoryGradient.Parent = InventoryPanel
+
+-- Inventory Title Bar
+local InventoryTitleBar = TitleBar:Clone()
+InventoryTitleBar.Parent = InventoryPanel
+InventoryTitleBar.TitleText.Text = "🎒 Pet Inventory"
+
+-- Back Button
+local BackButton = Instance.new("TextButton")
+BackButton.Name = "BackButton"
+BackButton.Size = UDim2.new(0, isMobile and 120 or 100, 0, isMobile and 50 or 40)
+BackButton.Position = UDim2.new(1, -150, 0.5, 0)
+BackButton.AnchorPoint = Vector2.new(1, 0.5)
+BackButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+BackButton.Text = "◀ BACK"
+BackButton.TextColor3 = colors.text
+BackButton.TextSize = isMobile and 22 or 18
+BackButton.Font = Enum.Font.GothamBold
+BackButton.Parent = InventoryTitleBar
+
+local BackButtonCorner = Instance.new("UICorner")
+BackButtonCorner.CornerRadius = UDim.new(0, 10)
+BackButtonCorner.Parent = BackButton
+
+-- Inventory Content Frame
+local InventoryContentFrame = Instance.new("Frame")
+InventoryContentFrame.Name = "InventoryContentFrame"
+InventoryContentFrame.Size = UDim2.new(1, -40, 0.85, -20)
+InventoryContentFrame.Position = UDim2.new(0.5, 0, 0.15, 10)
+InventoryContentFrame.AnchorPoint = Vector2.new(0.5, 0)
+InventoryContentFrame.BackgroundTransparency = 1
+InventoryContentFrame.Parent = InventoryPanel
+
+-- Inventory Label
+local InvInstructionLabel = Instance.new("TextLabel")
+InvInstructionLabel.Name = "InvInstructionLabel"
+InvInstructionLabel.Size = UDim2.new(1, 0, 0, isMobile and 40 or 30)
+InvInstructionLabel.BackgroundTransparency = 1
+InvInstructionLabel.Text = "Your Pets Collection"
+InvInstructionLabel.TextColor3 = colors.accent
+InvInstructionLabel.TextSize = isMobile and 26 or 22
+InvInstructionLabel.Font = Enum.Font.GothamBold
+InvInstructionLabel.Parent = InventoryContentFrame
+
+-- Empty inventory message (initially visible)
+local EmptyInventoryLabel = Instance.new("TextLabel")
+EmptyInventoryLabel.Name = "EmptyInventoryLabel"
+EmptyInventoryLabel.Size = UDim2.new(1, 0, 0, isMobile and 40 or 30)
+EmptyInventoryLabel.Position = UDim2.new(0, 0, 0.4, 0)
+EmptyInventoryLabel.BackgroundTransparency = 1
+EmptyInventoryLabel.Text = "No pets yet. Spawn some pets first! 🐾"
+EmptyInventoryLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+EmptyInventoryLabel.TextSize = isMobile and 24 or 20
+EmptyInventoryLabel.Font = Enum.Font.Gotham
+EmptyInventoryLabel.Parent = InventoryContentFrame
+
+-- Inventory scrolling frame (for pets list)
+local InventoryScrollFrame = Instance.new("ScrollingFrame")
+InventoryScrollFrame.Name = "InventoryScrollFrame"
+InventoryScrollFrame.Size = UDim2.new(1, 0, 0.8, 0)
+InventoryScrollFrame.Position = UDim2.new(0, 0, 0.1, 0)
+InventoryScrollFrame.BackgroundTransparency = 1
+InventoryScrollFrame.BorderSizePixel = 0
+InventoryScrollFrame.ScrollBarThickness = 6
+InventoryScrollFrame.ScrollBarImageColor3 = colors.primary
+InventoryScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
+InventoryScrollFrame.Parent = InventoryContentFrame
+
+-- Inventory Grid Layout
+local InventoryGrid = Instance.new("UIGridLayout")
+InventoryGrid.Name = "InventoryGrid"
+InventoryGrid.CellSize = UDim2.new(0, isMobile and 160 or 120, 0, isMobile and 200 or 160)
+InventoryGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+InventoryGrid.SortOrder = Enum.SortOrder.LayoutOrder
+InventoryGrid.Parent = InventoryScrollFrame
+
+-- Padding for inventory scroll frame
+local InventoryPadding = Instance.new("UIPadding")
+InventoryPadding.PaddingLeft = UDim.new(0, 10)
+InventoryPadding.PaddingRight = UDim.new(0, 10)
+InventoryPadding.PaddingTop = UDim.new(0, 10)
+InventoryPadding.PaddingBottom = UDim.new(0, 10)
+InventoryPadding.Parent = InventoryScrollFrame
+
+-- Pet selection dropdown menu (initially hidden)
+local DropdownMenu = Instance.new("Frame")
+DropdownMenu.Name = "DropdownMenu"
+DropdownMenu.Size = UDim2.new(1, 0, 0, 0) -- Will be resized based on content
+DropdownMenu.Position = UDim2.new(0, 0, 1, 5)
+DropdownMenu.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+DropdownMenu.BorderSizePixel = 0
+DropdownMenu.Visible = false
+DropdownMenu.ZIndex = 10
+DropdownMenu.Parent = PetSelectionFrame
+
+local DropdownMenuCorner = Instance.new("UICorner")
+DropdownMenuCorner.CornerRadius = UDim.new(0, 10)
+DropdownMenuCorner.Parent = DropdownMenu
+
+-- Add shadow to dropdown menu
+local menuShadow = dropdownShadow:Clone()
+menuShadow.Parent = DropdownMenu
+
+-- Create dropdown list layout
+local DropdownList = Instance.new("UIListLayout")
+DropdownList.Name = "DropdownList"
+DropdownList.SortOrder = Enum.SortOrder.LayoutOrder
+DropdownList.Padding = UDim.new(0, 5)
+DropdownList.Parent = DropdownMenu
+
+-- Add padding
+local DropdownPadding = Instance.new("UIPadding")
+DropdownPadding.PaddingLeft = UDim.new(0, 10)
+DropdownPadding.PaddingRight = UDim.new(0, 10)
+DropdownPadding.PaddingTop = UDim.new(0, 5)
+DropdownPadding.PaddingBottom = UDim.new(0, 5)
+DropdownPadding.Parent = DropdownMenu
+
+-- Populate dropdown menu with pet options
+local selectedPet = "Owl"
+local function populateDropdown()
+    for _, child in pairs(DropdownMenu:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    local count = 0
+    for petName, _ in pairs(petData) do
+        count = count + 1
+        local option = Instance.new("TextButton")
+        option.Name = petName .. "Option"
+        option.Size = UDim2.new(1, 0, 0, isMobile and 50 or 40)
+        option.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+        option.BackgroundTransparency = 0.5
+        option.Text = petName
+        option.TextColor3 = colors.text
+        option.TextSize = isMobile and 22 or 18
+        option.Font = Enum.Font.Gotham
+        option.ZIndex = 10
+        option.Parent = DropdownMenu
+        
+        local optionCorner = Instance.new("UICorner")
+        optionCorner.CornerRadius = UDim.new(0, 8)
+        optionCorner.Parent = option
+        
+        option.MouseButton1Click:Connect(function()
+            selectedPet = petName
+            PetDropdown.Text = petName
+            DropdownMenu.Visible = false
+            
+            -- Update preview icon
+            local petInfo = petData[petName]
+            PreviewIcon.Image = petInfo.meshId
+            PreviewIcon.ImageColor3 = petInfo.primaryColor
+        end)
+        
+        -- Hover effects
+        option.MouseEnter:Connect(function()
+            TweenService:Create(option, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(90, 90, 95)}):Play()
+        end)
+        
+        option.MouseLeave:Connect(function()
+            TweenService:Create(option, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 70, 75)}):Play()
+        end)
+    end
+    
+    -- Resize dropdown based on content
+    DropdownMenu.Size = UDim2.new(1, 0, 0, math.min((isMobile and 50 or 40) * count + 10, 300))
+end
+
+-- Toggle dropdown visibility
+PetDropdown.MouseButton1Click:Connect(function()
+    if not DropdownMenu.Visible then
+        populateDropdown()
+        DropdownMenu.Visible = true
+    else
+        DropdownMenu.Visible = false
+    end
+end)
+
+-- Close dropdown when clicking elsewhere
+BackgroundFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        DropdownMenu.Visible = false
+    end
+end)
+
+-- Toggle inventory panel
+InventoryButton.MouseButton1Click:Connect(function()
+    MainPanel:FindFirstChild("ContentFrame").Visible = false
+    InventoryPanel.Visible = true
+end)
+
+BackButton.MouseButton1Click:Connect(function()
+    InventoryPanel.Visible = false
+    MainPanel:FindFirstChild("ContentFrame").Visible = true
+end)
+
+-- Close the entire UI
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Button hover effects for main controls
+local function applyButtonHoverEffects(button, originalColor, hoverColor)
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = originalColor}):Play()
+    end)
+end
+
+applyButtonHoverEffects(SpawnButton, colors.accent, Color3.fromRGB(colors.accent.R*1.1, colors.accent.G*1.1, colors.accent.B*1.1))
+applyButtonHoverEffects(InventoryButton, colors.secondary, Color3.fromRGB(colors.secondary.R*1.1, colors.secondary.G*1.1, colors.secondary.B*1.1))
+applyButtonHoverEffects(BackButton, Color3.fromRGB(60, 60, 65), Color3.fromRGB(75, 75, 80))
+
+-- Button click effect
+local function applyClickEffect(button)
+    button.MouseButton1Down:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, button.Size.Y.Scale, button.Size.Y.Offset - 5)}):Play()
+    end)
+    
+    button.MouseButton1Up:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, button.Size.Y.Scale, button.Size.Y.Offset + 5)}):Play()
+    end)
+end
+
+applyClickEffect(SpawnButton)
+applyClickEffect(InventoryButton)
+
+-- Function to create pet template for inventory
+local function createPetTemplate(petName, petRarity)
+    local template = Instance.new("Frame")
+    template.Name = petName .. "_Template"
+    template.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    template.BorderSizePixel = 0
+    
+    local templateCorner = Instance.new("UICorner")
+    templateCorner.CornerRadius = UDim.new(0, 10)
+    templateCorner.Parent = template
+    
+    -- Add glow based on rarity
+    local rarityColor
+    if petRarity == "FR" then
+        rarityColor = Color3.fromRGB(255, 255, 255)
+    elseif petRarity == "NFR" then
+        rarityColor = Color3.fromRGB(115, 230, 95)
+    else -- MFR
+        rarityColor = Color3.fromRGB(255, 217, 61)
+    end
+    
+    local templateGlow = Instance.new("ImageLabel")
+    templateGlow.Name = "Glow"
+    templateGlow.Size = UDim2.new(1.1, 0, 1.1, 0)
+    templateGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    templateGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+    templateGlow.BackgroundTransparency = 1
+    templateGlow.Image = "rbxassetid://5028857084"
+    templateGlow.ImageColor3 = rarityColor
+    templateGlow.ImageTransparency = 0.7
+    templateGlow.ZIndex = -1
+    templateGlow.Parent = template
+    
+    local petInfo = petData[petName]
+    
+    -- Pet icon
+    local petIcon = Instance.new("ImageLabel")
+    petIcon.Name = "PetIcon"
+    petIcon.Size = UDim2.new(0.8, 0, 0.5, 0)
+    petIcon.Position = UDim2.new(0.5, 0, 0.3, 0)
+    petIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    petIcon.BackgroundTransparency = 1
+    petIcon.Image = petInfo.meshId
+    petIcon.ImageColor3 = petInfo.primaryColor
+    petIcon.Parent = template
+    
+    -- Pet name
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "NameLabel"
+    nameLabel.Size = UDim2.new(1, 0, 0, isMobile and 28 or 24)
+    nameLabel.Position = UDim2.new(0, 0, 0.6, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = petName
+    nameLabel.TextColor3 = colors.text
+    nameLabel.TextSize = isMobile and 20 or 16
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Parent = template
+    
+    -- Rarity badge
+    local rarityBadge = Instance.new("Frame")
+    rarityBadge.Name = "RarityBadge"
+    rarityBadge.Size = UDim2.new(0.8, 0, 0, isMobile and 30 or 24)
+    rarityBadge.Position = UDim2.new(0.5, 0, 0.75, 0)
+    rarityBadge.AnchorPoint = Vector2.new(0.5, 0)
+    rarityBadge.BackgroundColor3 = rarityColor
+    rarityBadge.Parent = template
+    
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0.5, 0)
+    badgeCorner.Parent = rarityBadge
+    
+    local rarityLabel = Instance.new("TextLabel")
+    rarityLabel.Name = "RarityLabel"
+    rarityLabel.Size = UDim2.new(1, 0, 1, 0)
+    rarityLabel.BackgroundTransparency = 1
+    rarityLabel.Text = petRarity
+    rarityLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
+    rarityLabel.TextSize = isMobile and 18 or 14
+    rarityLabel.Font = Enum.Font.GothamBold
+    rarityLabel.Parent = rarityBadge
+    
+    -- Equip button
+    local equipButton = Instance.new("TextButton")
+    equipButton.Name = "EquipButton"
+    equipButton.Size = UDim2.new(0.8, 0, 0, isMobile and 30 or 24)
+    equipButton.Position = UDim2.new(0.5, 0, 0.9, 0)
+    equipButton.AnchorPoint = Vector2.new(0.5, 0)
+    equipButton.BackgroundColor3 = colors.primary
+    equipButton.Text = "EQUIP"
+    equipButton.TextColor3 = colors.text
+    equipButton.TextSize = isMobile and 18 or 14
+    equipButton.Font = Enum.Font.GothamBold
+    equipButton.Parent = template
+    
+    local equipCorner = Instance.new("UICorner")
+    equipCorner.CornerRadius = UDim.new(0.5, 0)
+    equipCorner.Parent = equipButton
+    
+    -- Hover effect for equip button
+    applyButtonHoverEffects(equipButton, colors.primary, Color3.fromRGB(colors.primary.R*1.1, colors.primary.G*1.1, colors.primary.B*1.1))
+    
+    return template
+end
+
+-- Spawned pets collection
+local spawnedPets = {}
+local activePet = nil
+local petModels = {}
+
+-- Create pet model function
+local function createPetModel(petName, rarity)
+    -- Create pet information
+    local pet = {}
+    pet.name = petName
+    pet.rarity = rarity
+    pet.info = petData[petName]
+    
+    -- Create the pet model
+    local model = Instance.new("Model")
+    model.Name = petName .. "_" .. rarity
+    
+    -- Create the primary part (body)
+    local body = Instance.new("Part")
+    body.Name = "Body"
+    body.Size = Vector3.new(2, 2, 2)
+    body.Position = LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0)
+    body.Transparency = 1 -- Make the body invisible
+    body.CanCollide = false
+    body.Anchored = true
+    body.Parent = model
+    
+    -- Set as primary part
+    model.PrimaryPart = body
+    
+    -- Create the mesh
+    local mesh = Instance.new("SpecialMesh")
+    mesh.MeshType = Enum.MeshType.FileMesh
+    mesh.MeshId = pet.info.meshId
+    mesh.Scale = pet.info.scale
+    mesh.Parent = body
+    
+    -- Create the main pet body visual
+    local visual = Instance.new("Part")
+    visual.Name = "Visual"
+    visual.Size = Vector3.new(1, 1, 1)
+    visual.Transparency = 0
+    visual.CanCollide = false
+    visual.Anchored = false
+    visual.Position = body.Position
+    visual.Parent = model
+    
+    -- Weld visual to body
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = body
+    weld.Part1 = visual
+    weld.Parent = body
+    
+    -- Create the mesh for visual
+    local visualMesh = Instance.new("SpecialMesh")
+    visualMesh.MeshType = Enum.MeshType.FileMesh
+    visualMesh.MeshId = pet.info.meshId
+    visualMesh.Scale = pet.info.scale
+    visualMesh.Parent = visual
+    
+    -- Material and color
+    visual.Material = Enum.Material.SmoothPlastic
+    visual.Color = pet.info.primaryColor
+    
+    -- Add Neon parts for NFR and MFR
+    if rarity == "NFR" or rarity == "MFR" then
+        local glowColor = (rarity == "NFR") and Color3.fromRGB(115, 230, 95) or Color3.fromRGB(255, 217, 61)
+        
+        -- Create glow parts
+        for i = 1, 4 do
+            local glowPart = Instance.new("Part")
+            glowPart.Name = "GlowPart" .. i
+            glowPart.Size = Vector3.new(0.5, 0.5, 0.5)
+            glowPart.Transparency = 0.5
+            glowPart.CanCollide = false
+            glowPart.Anchored = false
+            glowPart.Material = Enum.Material.Neon
+            glowPart.Color = glowColor
+            glowPart.Shape = Enum.PartType.Ball
+            glowPart.Parent = model
+            
+            -- Position in a circle around the pet
+            local angle = (i - 1) * (math.pi / 2)
+            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * 2
+            glowPart.Position = body.Position + offset
+            
+            -- Weld to body
+            local glowWeld = Instance.new("WeldConstraint")
+            glowWeld.Part0 = body
+            glowWeld.Part1 = glowPart
+            glowWeld.Parent = body
+        end
+    end
+    
+    -- Add fly parts if FR or NFR or MFR
+    if rarity == "FR" or rarity == "NFR" or rarity == "MFR" then
+        -- Left wing
+        local leftWing = Instance.new("Part")
+        leftWing.Name = "LeftWing"
+        leftWing.Size = Vector3.new(0.1, 2, 1)
+        leftWing.Transparency = 0.3
+        leftWing.CanCollide = false
+        leftWing.Anchored = false
+        leftWing.Material = Enum.Material.Neon
+        leftWing.Color = pet.info.secondaryColor
+        leftWing.Position = body.Position + Vector3.new(-1, 0, 0)
+        leftWing.Parent = model
+        
+        -- Weld left wing
+        local leftWingWeld = Instance.new("WeldConstraint")
+        leftWingWeld.Part0 = body
+        leftWingWeld.Part1 = leftWing
+        leftWingWeld.Parent = body
+        
+        -- Right wing
+        local rightWing = Instance.new("Part")
+        rightWing.Name = "RightWing"
+        rightWing.Size = Vector3.new(0.1, 2, 1)
+        rightWing.Transparency = 0.3
+        rightWing.CanCollide = false
+        rightWing.Anchored = false
+        rightWing.Material = Enum.Material.Neon
+        rightWing.Color = pet.info.secondaryColor
+        rightWing.Position = body.Position + Vector3.new(1, 0, 0)
+        rightWing.Parent = model
+        
+        -- Weld right wing
+        local rightWingWeld = Instance.new("WeldConstraint")
+        rightWingWeld.Part0 = body
+        rightWingWeld.Part1 = rightWing
+        rightWingWeld.Parent = body
+    end
+    
+    model.Parent = workspace
+    
+    -- Store reference to the model
+    table.insert(petModels, model)
+    
+    -- Return the created model and pet info
+    return model, pet
+end
+
+-- Function to animate pet
+local function animatePet(petModel, petInfo)
+    -- Floating animation for idle
+    local floatHeight = 0
+    local floatSpeed = petInfo.info.animationSpeed
+    
+    -- Wing flap animation
+    local flapAngle = 0
+    local flapSpeed = 3 * petInfo.info.animationSpeed
+    
+    -- Glow animation for NFR/MFR
+    local glowSize = 1
+    local glowSpeed = 1
+    
+    local animationConnection = RunService.Heartbeat:Connect(function(dt)
+        -- Check if model still exists
+        if not petModel or not petModel.PrimaryPart then
+            if animationConnection then
+                animationConnection:Disconnect()
+            end
+            return
+        end
+        
+        -- Floating animation
+        floatHeight = floatHeight + dt * floatSpeed
+        local yOffset = math.sin(floatHeight) * 0.5
+        
+        -- If pet is following (not riding)
+        if activePet == petModel and not LocalPlayer.Character:FindFirstChild("PetAttachment") then
+            -- Get target position behind player
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local hrp = character.HumanoidRootPart
+                local behind = hrp.CFrame * CFrame.new(0, 0, 3)
+                
+                -- Smoothly move towards target
+                local currentPos = petModel.PrimaryPart.Position
+                local targetPos = behind.Position + Vector3.new(0, 1 + yOffset, 0)
+                local newPos = currentPos:Lerp(targetPos, 0.1)
+                
+                -- Look at player
+                local lookAt = CFrame.lookAt(newPos, hrp.Position)
+                
+                -- Update position
+                petModel:SetPrimaryPartCFrame(CFrame.new(newPos) * CFrame.Angles(0, lookAt.Y, 0))
+            end
+        elseif not LocalPlayer.Character:FindFirstChild("PetAttachment") then
+            -- Just float in place if not active
+            local currentPos = petModel.PrimaryPart.Position
+            petModel:SetPrimaryPartCFrame(CFrame.new(currentPos.X, currentPos.Y + yOffset, currentPos.Z))
+        end
+        
+        -- Wing flap animation if pet has wings
+        local leftWing = petModel:FindFirstChild("LeftWing")
+        local rightWing = petModel:FindFirstChild("RightWing")
+        
+        if leftWing and rightWing then
+            flapAngle = flapAngle + dt * flapSpeed
+            
+            local wingAngle = math.sin(flapAngle) * 0.5
+            
+            -- Update wing rotation
+            local leftWingCF = petModel.PrimaryPart.CFrame * CFrame.Angles(0, 0, wingAngle) * CFrame.new(-1.5, 0, 0)
+            local rightWingCF = petModel.PrimaryPart.CFrame * CFrame.Angles(0, 0, -wingAngle) * CFrame.new(1.5, 0, 0)
+            
+            leftWing.CFrame = leftWingCF
+            rightWing.CFrame = rightWingCF
+        end
+        
+        -- Glow animation for NFR/MFR pets
+        if petInfo.rarity == "NFR" or petInfo.rarity == "MFR" then
+            glowSize = glowSize + dt * glowSpeed
+            
+            for i = 1, 4 do
+                local glowPart = petModel:FindFirstChild("GlowPart" .. i)
+                if glowPart then
+                    -- Orbit around pet
+                    local angle = (i - 1) * (math.pi / 2) + gl
