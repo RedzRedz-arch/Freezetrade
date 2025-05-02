@@ -554,4 +554,413 @@ DropdownContainer.Visible = false
 DropdownContainer.ZIndex = 10
 DropdownContainer.Parent = PetSelectionFrame
 
-local Dro
+local DropdownCorner = Instance.new("UICorner")
+DropdownCorner.CornerRadius = UDim.new(0, 10)
+DropdownCorner.Parent = DropdownContainer
+
+local DropdownScrollFrame = Instance.new("ScrollingFrame")
+DropdownScrollFrame.Name = "DropdownScrollFrame"
+DropdownScrollFrame.Size = UDim2.new(1, -10, 1, -10)
+DropdownScrollFrame.Position = UDim2.new(0.5, 0, 0, 5)
+DropdownScrollFrame.AnchorPoint = Vector2.new(0.5, 0)
+DropdownScrollFrame.BackgroundTransparency = 1
+DropdownScrollFrame.ScrollBarThickness = 6
+DropdownScrollFrame.ScrollBarImageColor3 = colors.accent
+DropdownScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #petList * 40)
+DropdownScrollFrame.ZIndex = 10
+DropdownScrollFrame.Parent = DropdownContainer
+
+-- Populate dropdown
+local function populateDropdown()
+    for i, petName in ipairs(petList) do
+        local petOption = Instance.new("TextButton")
+        petOption.Name = petName .. "Option"
+        petOption.Size = UDim2.new(1, -10, 0, 40)
+        petOption.Position = UDim2.new(0.5, 0, 0, (i-1) * 40 + 5)
+        petOption.AnchorPoint = Vector2.new(0.5, 0)
+        petOption.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+        petOption.Text = petName
+        petOption.TextColor3 = colors.text
+        petOption.TextSize = 18
+        petOption.Font = Enum.Font.Gotham
+        petOption.ZIndex = 10
+        petOption.Parent = DropdownScrollFrame
+        
+        local petOptionCorner = Instance.new("UICorner")
+        petOptionCorner.CornerRadius = UDim.new(0, 8)
+        petOptionCorner.Parent = petOption
+        
+        -- Icon for the pet
+        local petIcon = Instance.new("ImageLabel")
+        petIcon.Name = "PetIcon"
+        petIcon.Size = UDim2.new(0, 25, 0, 25)
+        petIcon.Position = UDim2.new(0, 10, 0.5, 0)
+        petIcon.AnchorPoint = Vector2.new(0, 0.5)
+        petIcon.BackgroundTransparency = 1
+        petIcon.Image = "rbxassetid://" .. string.match(petData[petName].meshId, "%d+")
+        petIcon.ImageColor3 = petData[petName].primaryColor
+        petIcon.ZIndex = 10
+        petIcon.Parent = petOption
+        
+        -- Click to select
+        petOption.MouseButton1Click:Connect(function()
+            selectedPet = petName
+            PetDropdown.Text = petName
+            dropdownOpen = false
+            DropdownContainer.Visible = false
+            DropdownArrow.Rotation = 0
+            updatePreview()
+        end)
+        
+        -- Hover effects
+        petOption.MouseEnter:Connect(function()
+            TweenService:Create(petOption, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 100, 105)}):Play()
+        end)
+        
+        petOption.MouseLeave:Connect(function()
+            TweenService:Create(petOption, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 80, 85)}):Play()
+        end)
+    end
+end
+
+populateDropdown()
+
+-- Toggle dropdown visibility
+PetDropdown.MouseButton1Click:Connect(function()
+    dropdownOpen = not dropdownOpen
+    DropdownContainer.Visible = dropdownOpen
+    DropdownArrow.Rotation = dropdownOpen and 180 or 0
+end)
+
+-- Close dropdown when clicking elsewhere
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local mousePos = UserInputService:GetMouseLocation()
+        local dropdownFrame = PetSelectionFrame.AbsolutePosition
+        local dropdownSize = PetSelectionFrame.AbsoluteSize
+        local containerSize = DropdownContainer.AbsoluteSize
+        
+        local inFrame = mousePos.X >= dropdownFrame.X and
+                       mousePos.X <= dropdownFrame.X + dropdownSize.X and
+                       mousePos.Y >= dropdownFrame.Y and
+                       mousePos.Y <= dropdownFrame.Y + dropdownSize.Y
+                       
+        local inContainer = dropdownOpen and
+                           mousePos.X >= dropdownFrame.X and
+                           mousePos.X <= dropdownFrame.X + dropdownSize.X and
+                           mousePos.Y >= dropdownFrame.Y + dropdownSize.Y and
+                           mousePos.Y <= dropdownFrame.Y + dropdownSize.Y + containerSize.Y
+        
+        if dropdownOpen and not inFrame and not inContainer then
+            dropdownOpen = false
+            DropdownContainer.Visible = false
+            DropdownArrow.Rotation = 0
+        end
+    end
+end)
+
+-- Make UI draggable
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    MainPanel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainPanel.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateDrag(input)
+    end
+end)
+
+-- Close button functionality
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Button hover effects
+SpawnButton.MouseEnter:Connect(function()
+    TweenService:Create(SpawnButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(colors.accent.R*1.1, colors.accent.G*1.1, colors.accent.B*1.1)}):Play()
+    TweenService:Create(buttonGlow, TweenInfo.new(0.3), {ImageTransparency = 0.5}):Play()
+end)
+
+SpawnButton.MouseLeave:Connect(function()
+    TweenService:Create(SpawnButton, TweenInfo.new(0.2), {BackgroundColor3 = colors.accent}):Play()
+    TweenService:Create(buttonGlow, TweenInfo.new(0.3), {ImageTransparency = 0.7}):Play()
+end)
+
+-- Sparkle animation for MFR and NFR pets
+local sparkleFrames = {}
+local function createSparkleEffect(pet)
+    for i = 1, 5 do
+        local sparkle = Instance.new("ImageLabel")
+        sparkle.Size = UDim2.new(0, math.random(10, 20), 0, math.random(10, 20))
+        sparkle.Position = UDim2.new(math.random(), 0, math.random(), 0)
+        sparkle.BackgroundTransparency = 1
+        sparkle.Image = "rbxassetid://6333823"  -- Sparkle image
+        sparkle.ImageColor3 = selectedRarity.name == "MFR" and 
+            Color3.fromHSV(math.random(), 0.8, 1) or  -- Rainbow for MFR
+            Color3.fromRGB(255, 255, 255)  -- White for NFR
+        sparkle.ImageTransparency = 0.4
+        sparkle.ZIndex = 3
+        sparkle.Parent = pet.PrimaryPart
+        
+        table.insert(sparkleFrames, sparkle)
+    end
+end
+
+-- Function to create the pet
+local activePets = {}
+
+local function spawnPet()
+    -- Visual feedback for button press
+    TweenService:Create(SpawnButton, TweenInfo.new(0.1), {Size = UDim2.new(0.78, 0, 0, 56)}):Play()
+    wait(0.1)
+    TweenService:Create(SpawnButton, TweenInfo.new(0.1), {Size = UDim2.new(0.8, 0, 0, 60)}):Play()
+    
+    local petInfo = petData[selectedPet]
+    if not petInfo then return end
+    
+    -- Create pet model
+    local petModel = Instance.new("Model")
+    petModel.Name = selectedPet .. "_" .. selectedRarity.name
+    
+    -- Create pet primary part (body)
+    local primaryPart = Instance.new("Part")
+    primaryPart.Name = "PrimaryPart"
+    primaryPart.Size = Vector3.new(1, 1, 1)
+    primaryPart.Position = LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0)
+    primaryPart.Anchored = true
+    primaryPart.CanCollide = false
+    primaryPart.Transparency = 1  -- Make base part invisible
+    primaryPart.Parent = petModel
+    
+    -- Set as primary part
+    petModel.PrimaryPart = primaryPart
+    
+    -- Add special mesh
+    local specialMesh = Instance.new("SpecialMesh")
+    specialMesh.MeshId = petInfo.meshId
+    specialMesh.Scale = petInfo.scale
+    
+    -- Set materials based on rarity
+    if selectedRarity.name == "FR" then
+        specialMesh.TextureId = ""  -- No texture, just color
+    elseif selectedRarity.name == "NFR" then
+        specialMesh.TextureId = ""  -- No texture, neon material
+    elseif selectedRarity.name == "MFR" then
+        specialMesh.TextureId = ""  -- No texture, neon material with special effects
+    end
+    
+    -- Apply colors based on rarity
+    local primaryColor = petInfo.primaryColor
+    local secondaryColor = petInfo.secondaryColor
+    
+    if selectedRarity.name == "NFR" then
+        primaryColor = Color3.fromRGB(
+            math.min(primaryColor.R * 1.5 * 255, 255),
+            math.min(primaryColor.G * 1.5 * 255, 255),
+            math.min(primaryColor.B * 1.5 * 255, 255)
+        )
+    elseif selectedRarity.name == "MFR" then
+        primaryColor = Color3.fromRGB(
+            math.min(primaryColor.R * 2 * 255, 255),
+            math.min(primaryColor.G * 2 * 255, 255),
+            math.min(primaryColor.B * 2 * 255, 255)
+        )
+    end
+    
+    -- Create mesh part for visualization
+    local meshPart = Instance.new("MeshPart")
+    meshPart.Name = "Body"
+    meshPart.Color = primaryColor
+    meshPart.Material = (selectedRarity.name == "FR") and Enum.Material.Plastic or Enum.Material.Neon
+    meshPart.Size = Vector3.new(1, 1, 1)  -- Will be adjusted by mesh scale
+    meshPart.Position = primaryPart.Position
+    meshPart.CanCollide = false
+    meshPart.Transparency = 0.1
+    meshPart.MeshId = petInfo.meshId
+    meshPart.Parent = petModel
+    
+    -- If it's a neon or mega variant, create special effects
+    if selectedRarity.name == "NFR" or selectedRarity.name == "MFR" then
+        createSparkleEffect(petModel)
+        
+        -- Add point light
+        local light = Instance.new("PointLight")
+        light.Color = selectedRarity.name == "MFR" and Color3.fromRGB(255, 255, 255) or primaryColor
+        light.Range = 8
+        light.Brightness = 1
+        light.Parent = petModel.PrimaryPart
+        
+        -- For MFR, animate rainbow colors
+        if selectedRarity.name == "MFR" then
+            spawn(function()
+                local h, s, v = 0, 1, 1
+                while petModel.Parent do
+                    h = (h + 0.005) % 1
+                    local rainbowColor = Color3.fromHSV(h, s, v)
+                    light.Color = rainbowColor
+                    meshPart.Color = Color3.fromRGB(
+                        math.min(petInfo.primaryColor.R * 255 + rainbowColor.R * 100, 255),
+                        math.min(petInfo.primaryColor.G * 255 + rainbowColor.G * 100, 255),
+                        math.min(petInfo.primaryColor.B * 255 + rainbowColor.B * 100, 255)
+                    )
+                    
+                    -- Update sparkle colors
+                    for _, sparkle in ipairs(sparkleFrames) do
+                        if math.random() < 0.1 then
+                            sparkle.ImageColor3 = Color3.fromHSV(math.random(), 0.8, 1)
+                        end
+                    end
+                    
+                    RunService.RenderStepped:Wait()
+                end
+            end)
+        end
+    end
+    
+    -- Position pet above player
+    petModel:SetPrimaryPartCFrame(CFrame.new(LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0)))
+    petModel.Parent = workspace
+    
+    -- Add to active pets table
+    table.insert(activePets, petModel)
+    
+    -- Update status text
+    StatusText.Text = "✨ " .. selectedRarity.name .. " " .. selectedPet .. " spawned!"
+    
+    -- Animation loop - make pet follow player
+    spawn(function()
+        local time = 0
+        local amplitude = 0.5
+        local frequency = 2 * math.pi / 4  -- Complete cycle in 4 seconds
+        
+        while petModel.Parent do
+            time = time + 0.03 * petInfo.animationSpeed
+            
+            local targetPosition = LocalPlayer.Character.HumanoidRootPart.Position + 
+                                    Vector3.new(
+                                        math.cos(time) * 2,  -- Circle around player
+                                        3 + math.sin(time * frequency) * amplitude,  -- Hover up and down
+                                        math.sin(time) * 2   -- Circle around player
+                                    )
+            
+            -- Look at player while circling
+            local lookAt = (LocalPlayer.Character.HumanoidRootPart.Position - targetPosition).Unit
+            local cf = CFrame.new(targetPosition, targetPosition + lookAt)
+            
+            -- Smooth movement
+            petModel:SetPrimaryPartCFrame(cf)
+            
+            wait()
+        end
+    end)
+    
+    -- Apply animation to sparkles
+    spawn(function()
+        while petModel.Parent do
+            for _, sparkle in ipairs(sparkleFrames) do
+                if sparkle and sparkle.Parent then
+                    sparkle.Position = UDim2.new(math.random(), 0, math.random(), 0)
+                    sparkle.Rotation = math.random(0, 360)
+                    
+                    -- Fade in and out
+                    TweenService:Create(sparkle, TweenInfo.new(0.5), {ImageTransparency = 0.2}):Play()
+                    wait(0.5)
+                    TweenService:Create(sparkle, TweenInfo.new(0.5), {ImageTransparency = 0.8}):Play()
+                    wait(0.5)
+                end
+            end
+            wait()
+        end
+    end)
+    
+    -- Limit to 3 pets at once
+    if #activePets > 3 then
+        local oldPet = table.remove(activePets, 1)
+        if oldPet and oldPet.Parent then
+            -- Fade out animation
+            for _, child in pairs(oldPet:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    TweenService:Create(child, TweenInfo.new(1), {Transparency = 1}):Play()
+                elseif child:IsA("PointLight") then
+                    TweenService:Create(child, TweenInfo.new(1), {Brightness = 0}):Play()
+                end
+            end
+            
+            wait(1)
+            oldPet:Destroy()
+        end
+    end
+end
+
+-- Connect spawn button
+SpawnButton.MouseButton1Click:Connect(spawnPet)
+
+-- Initialize preview
+updatePreview()
+
+-- Notification when script loads
+local NotificationFrame = Instance.new("Frame")
+NotificationFrame.Name = "NotificationFrame"
+NotificationFrame.Size = UDim2.new(0, 300, 0, 80)
+NotificationFrame.Position = UDim2.new(0.5, 0, 0, -100)
+NotificationFrame.AnchorPoint = Vector2.new(0.5, 0)
+NotificationFrame.BackgroundColor3 = colors.primary
+NotificationFrame.Parent = ScreenGui
+
+local NotificationCorner = Instance.new("UICorner")
+NotificationCorner.CornerRadius = UDim.new(0, 10)
+NotificationCorner.Parent = NotificationFrame
+
+local NotificationGradient = TitleGradient:Clone()
+NotificationGradient.Parent = NotificationFrame
+
+local NotificationLabel = Instance.new("TextLabel")
+NotificationLabel.Name = "NotificationLabel"
+NotificationLabel.Size = UDim2.new(1, -20, 1, 0)
+NotificationLabel.Position = UDim2.new(0.5, 0, 0, 0)
+NotificationLabel.AnchorPoint = Vector2.new(0.5, 0)
+NotificationLabel.BackgroundTransparency = 1
+NotificationLabel.Text = "✨ Pet Spawner v2.0 Loaded ✨\nEnhanced with preppy UI!"
+NotificationLabel.TextColor3 = colors.text
+NotificationLabel.TextSize = 18
+NotificationLabel.Font = Enum.Font.GothamBold
+NotificationLabel.Parent = NotificationFrame
+
+-- Animate notification
+TweenService:Create(NotificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Position = UDim2.new(0.5, 0, 0, 20)}):Play()
+
+spawn(function()
+    wait(3)
+    TweenService:Create(NotificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 0, -100)}):Play()
+    wait(0.5)
+    NotificationFrame:Destroy()
+end)
+
+-- Disclaimer in console
+print("⚠️ NOTE: This script is for EDUCATIONAL PURPOSES ONLY")
+print("🐾 Pet Spawner v2.0 loaded successfully")
+print("✨ Enhanced with preppy UI and visual effects")
