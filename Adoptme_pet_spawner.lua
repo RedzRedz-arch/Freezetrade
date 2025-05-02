@@ -527,4 +527,76 @@ local InventoryButton = Instance.new("TextButton")
 InventoryButton.Name = "InventoryButton"
 InventoryButton.Size = UDim2.new(0.35, 0, 0, isMobile and 60 or 40)
 InventoryButton.Position = UDim2.new(0.825, 0, 0, isMobile and 100 or 80)
-Invent
+InventoryButton.Name = "InventoryButton"
+InventoryButton.Size = UDim2.new(0.35, 0, 0, isMobile and 60 or 40)
+InventoryButton.Position = UDim2.new(0.825, 0, 0, isMobile and 100 or 80)
+InventoryButton.AnchorPoint = Vector2.new(0.5, 0)
+InventoryButton.BackgroundColor3 = colors.secondary
+InventoryButton.Text = "🎒 INVENTORY"
+InventoryButton.TextColor3 = colors.text
+InventoryButton.TextSize = isMobile and 20 or 16
+InventoryButton.Font = Enum.Font.GothamBold
+InventoryButton.Parent = ContentFrame
+
+local InventoryButtonCorner = Instance.new("UICorner")
+InventoryButtonCorner.CornerRadius = UDim.new(0, 10)
+InventoryButtonCorner.Parent = InventoryButton
+
+-- Inventory button gradient
+local InventoryGradient = Instance.new("UIGradient")
+InventoryGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, colors.secondary),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(colors.secondary.R*0.8, colors.secondary.G*0.8, colors.secondary.B*0.8))
+})
+InventoryGradient.Rotation = 90
+InventoryGradient.Parent = InventoryButton
+
+-- Button glow for inventory
+local inventoryGlow = Instance.new("ImageLabel")
+inventoryGlow.Name = "Glow"
+inventoryGlow.Size = UDim2.new(1.1, 0, 1.2, 0)
+inventoryGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+inventoryGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+inventoryGlow.BackgroundTransparency = 1
+inventoryGlow.Image = "rbxassetid://5028857084"
+inventoryGlow.ImageColor3 = colors.secondary
+inventoryGlow.ImageTransparency = 0.7
+inventoryGlow.ZIndex = -1
+inventoryGlow.Parent = InventoryButton
+
+-- Inventory Panel (initially hidden)
+local InventoryPanel = Instance.new("Frame")
+InventoryPanel.Name = "InventoryPanel"
+InventoryPanel.Size = UDim2.new(1, 0, 1, 0)
+InventoryPanel.BackgroundColor3 = colors.background
+InventoryPanel.BorderSizePixel = 0
+InventoryPanel.Visible = false
+InventoryPanel.Parent = MainPanel
+
+local InventoryPanelCorner = UICorner:Clone()
+InventoryPanelCorner.Parent = InventoryPanel
+
+local InventoryGradient = UIGradient:Clone()
+InventoryGradient.Parent = InventoryPanel
+
+-- Inventory Title Bar
+local InventoryTitleBar = TitleBar:Clone()
+InventoryTitleBar.Parent = InventoryPanel
+InventoryTitleBar.TitleText.Text = "🎒 Pet Inventory"
+
+-- Back Button
+local BackButton = Instance.new("TextButton")
+BackButton.Name = "BackButton"
+BackButton.Size = UDim2.new(0, isMobile and 120 or 100, 0, isMobile and 50 or 40)
+BackButton.Position = UDim2.new(1, -150, 0.5, 0)
+BackButton.AnchorPoint = Vector2.new(1, 0.5)
+BackButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+BackButton.Text = "◀ BACK"
+BackButton.TextColor3 = colors.text
+BackButton.TextSize = isMobile and 22 or 18
+BackButton.Font = Enum.Font.GothamBold
+BackButton.Parent = InventoryTitleBar
+
+local BackButtonCorner = Instance.new("UICorner")
+BackButtonCorner.CornerRadius = UDim.new(0, 10)
+BackButtonCorner.Parent = BackButton
