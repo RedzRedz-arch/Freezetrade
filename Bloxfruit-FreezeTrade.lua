@@ -244,7 +244,8 @@ function ChinoksHub:CreateCompactUI()
     description.Size = UDim2.new(1, 0, 0, 60)
     description.Position = UDim2.new(0, 0, 0, 50)
     description.BackgroundTransparency = 1
-    description.Text = "This feature visually simulates freezing the trade UI. (VISUAL ONLY - For demonstration purposes)"
+    description.Text = "This is a Freeze Trade that when turn on it freeze player screen and make them auto accept!
+    "
     description.Font = Enum.Font.Gotham
     description.TextSize = 14
     description.TextWrapped = true
